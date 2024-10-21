@@ -3,7 +3,7 @@ name = "Svelte"
 description = "Svelte support"
 version = "0.2.1"
 schema_version = 1
-authors = []
+authors = ["Zed Industries <support@zed.dev>"]
 repository = "https://github.com/zed-extensions/svelte"
 
 [language_servers.svelte-language-server]
