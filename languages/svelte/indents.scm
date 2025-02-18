@@ -6,4 +6,9 @@
   (snippet_statement)
   (script_element)
   (style_element)
+  (start_tag ">" @end)
+  (self_closing_tag "/>" @end)
+  (element
+    (start_tag) @start
+    (end_tag)? @end)
 ] @indent
