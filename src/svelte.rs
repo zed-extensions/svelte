@@ -121,6 +121,7 @@ impl zed::Extension for SvelteExtension {
 }
 
 zed::register_extension!(SvelteExtension);
+
 /// Extensions to the Zed extension API that have not yet stabilized.
 mod zed_ext {
     /// Sanitizes the given path to remove the leading `/` on Windows.
