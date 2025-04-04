@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "zed_svelte"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "zed_extension_api",
 ]
