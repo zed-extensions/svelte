@@ -8,6 +8,8 @@ struct SvelteExtension {
 const SERVER_PATH: &str = "node_modules/svelte-language-server/bin/server.js";
 const PACKAGE_NAME: &str = "svelte-language-server";
 
+const TS_PLUGIN_PACKAGE_NAME: &str = "typescript-svelte-plugin";
+
 impl SvelteExtension {
     fn server_exists(&self) -> bool {
         fs::metadata(SERVER_PATH).map_or(false, |stat| stat.is_file())
@@ -16,6 +18,7 @@ impl SvelteExtension {
     fn server_script_path(&mut self, id: &zed::LanguageServerId) -> Result<String> {
         let server_exists = self.server_exists();
         if self.did_find_server && server_exists {
+            self.install_ts_plugin_if_needed()?;
             return Ok(SERVER_PATH.to_string());
         }
 
@@ -49,8 +52,25 @@ impl SvelteExtension {
             }
         }
 
+        self.install_ts_plugin_if_needed()?;
+
         self.did_find_server = true;
         Ok(SERVER_PATH.to_string())
+    }
+
+    fn install_ts_plugin_if_needed(&self) -> Result<()> {
+        let installed_version = zed::npm_package_installed_version(TS_PLUGIN_PACKAGE_NAME)?;
+        let latest_version = zed::npm_package_latest_version(TS_PLUGIN_PACKAGE_NAME)?;
+
+        if installed_version.as_ref() != Some(&latest_version) {
+            println!("Installing {TS_PLUGIN_PACKAGE_NAME}@{latest_version}...");
+            zed::npm_install_package(TS_PLUGIN_PACKAGE_NAME, &latest_version)?;
+            println!("{TS_PLUGIN_PACKAGE_NAME}@{latest_version} installed");
+        } else {
+            println!("Found {TS_PLUGIN_PACKAGE_NAME}@{latest_version} installed");
+        }
+
+        Ok(())
     }
 }
 
@@ -117,6 +137,32 @@ impl zed::Extension for SvelteExtension {
                 "javascript": config
             }
         })))
+    }
+
+    fn language_server_additional_workspace_configuration(
+        &mut self,
+        _id: &zed::LanguageServerId,
+        target_id: &zed::LanguageServerId,
+        _: &zed::Worktree,
+    ) -> Result<Option<serde_json::Value>> {
+        match target_id.as_ref() {
+            "vtsls" => Ok(Some(serde_json::json!({
+                "vtsls": {
+                    "tsserver": {
+                        "globalPlugins": [{
+                            "name": TS_PLUGIN_PACKAGE_NAME,
+                            "location": zed_ext::sanitize_windows_path(env::current_dir().unwrap())
+                                .join("node_modules")
+                                .join(&TS_PLUGIN_PACKAGE_NAME)
+                                .to_string_lossy()
+                                .to_string(),
+                            "enableForWorkspaceTypeScriptVersions": true
+                        }]
+                    }
+                },
+            }))),
+            _ => Ok(None),
+        }
     }
 }
 
