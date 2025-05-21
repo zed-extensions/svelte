@@ -1,63 +1,60 @@
-use std::{env, fs};
+use std::{collections::HashSet, env};
 use zed_extension_api::{self as zed, serde_json, Result};
 
 struct SvelteExtension {
-    did_find_server: bool,
+    installed: HashSet<String>,
 }
 
-const SERVER_PATH: &str = "node_modules/svelte-language-server/bin/server.js";
 const PACKAGE_NAME: &str = "svelte-language-server";
+const TS_PLUGIN_PACKAGE_NAME: &str = "typescript-svelte-plugin";
 
 impl SvelteExtension {
-    fn server_exists(&self) -> bool {
-        fs::metadata(SERVER_PATH).map_or(false, |stat| stat.is_file())
-    }
+    fn install_package_if_needed(
+        &mut self,
+        id: &zed::LanguageServerId,
+        package_name: &str,
+    ) -> Result<()> {
+        let installed_version = zed::npm_package_installed_version(package_name)?;
 
-    fn server_script_path(&mut self, id: &zed::LanguageServerId) -> Result<String> {
-        let server_exists = self.server_exists();
-        if self.did_find_server && server_exists {
-            return Ok(SERVER_PATH.to_string());
+        // If package is already installed in this session, then we won't reinstall it
+        if installed_version.is_some() && self.installed.contains(package_name) {
+            return Ok(());
         }
 
         zed::set_language_server_installation_status(
             id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
-        let version = zed::npm_package_latest_version(PACKAGE_NAME)?;
 
-        if !server_exists
-            || zed::npm_package_installed_version(PACKAGE_NAME)?.as_ref() != Some(&version)
-        {
+        let latest_version = zed::npm_package_latest_version(package_name)?;
+
+        if installed_version.as_ref() != Some(&latest_version) {
+            println!("Installing {package_name}@{latest_version}...");
+
             zed::set_language_server_installation_status(
                 id,
                 &zed::LanguageServerInstallationStatus::Downloading,
             );
-            let result = zed::npm_install_package(PACKAGE_NAME, &version);
-            match result {
-                Ok(()) => {
-                    if !self.server_exists() {
-                        Err(format!(
-                            "installed package '{PACKAGE_NAME}' did not contain expected path '{SERVER_PATH}'",
-                        ))?;
-                    }
-                }
-                Err(error) => {
-                    if !self.server_exists() {
-                        Err(error)?;
-                    }
+
+            if let Err(error) = zed::npm_install_package(package_name, &latest_version) {
+                // If installation failed, but we don't want to error but rather reuse existing version
+                if installed_version.is_none() {
+                    Err(error)?;
                 }
             }
+        } else {
+            println!("Found {package_name}@{latest_version} installed");
         }
 
-        self.did_find_server = true;
-        Ok(SERVER_PATH.to_string())
+        self.installed.insert(package_name.into());
+        Ok(())
     }
 }
 
 impl zed::Extension for SvelteExtension {
     fn new() -> Self {
         Self {
-            did_find_server: false,
+            installed: HashSet::new(),
         }
     }
 
@@ -66,12 +63,16 @@ impl zed::Extension for SvelteExtension {
         id: &zed::LanguageServerId,
         _: &zed::Worktree,
     ) -> Result<zed::Command> {
-        let server_path = self.server_script_path(id)?;
+        self.install_package_if_needed(id, PACKAGE_NAME)?;
+        self.install_package_if_needed(id, TS_PLUGIN_PACKAGE_NAME)?;
+
         Ok(zed::Command {
             command: zed::node_binary_path()?,
             args: vec![
                 zed_ext::sanitize_windows_path(env::current_dir().unwrap())
-                    .join(&server_path)
+                    .join("node_modules")
+                    .join(PACKAGE_NAME)
+                    .join("bin/server.js")
                     .to_string_lossy()
                     .to_string(),
                 "--stdio".to_string(),
@@ -117,6 +118,32 @@ impl zed::Extension for SvelteExtension {
                 "javascript": config
             }
         })))
+    }
+
+    fn language_server_additional_workspace_configuration(
+        &mut self,
+        _id: &zed::LanguageServerId,
+        target_id: &zed::LanguageServerId,
+        _: &zed::Worktree,
+    ) -> Result<Option<serde_json::Value>> {
+        match target_id.as_ref() {
+            "vtsls" => Ok(Some(serde_json::json!({
+                "vtsls": {
+                    "tsserver": {
+                        "globalPlugins": [{
+                            "name": TS_PLUGIN_PACKAGE_NAME,
+                            "location": zed_ext::sanitize_windows_path(env::current_dir().unwrap())
+                                .join("node_modules")
+                                .join(&TS_PLUGIN_PACKAGE_NAME)
+                                .to_string_lossy()
+                                .to_string(),
+                            "enableForWorkspaceTypeScriptVersions": true
+                        }]
+                    }
+                },
+            }))),
+            _ => Ok(None),
+        }
     }
 }
 
