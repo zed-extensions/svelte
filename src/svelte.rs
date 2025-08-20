@@ -113,6 +113,7 @@ impl zed::Extension for SvelteExtension {
 
         Ok(Some(serde_json::json!({
             "provideFormatter": true,
+            "dontFilterIncompleteCompletions": true,
             "configuration": {
                 "typescript": config,
                 "javascript": config
