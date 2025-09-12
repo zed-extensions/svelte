@@ -69,7 +69,8 @@ impl zed::Extension for SvelteExtension {
         Ok(zed::Command {
             command: zed::node_binary_path()?,
             args: vec![
-                zed_ext::sanitize_windows_path(env::current_dir().unwrap())
+                env::current_dir()
+                    .unwrap()
                     .join("node_modules")
                     .join(PACKAGE_NAME)
                     .join("bin/server.js")
@@ -133,7 +134,7 @@ impl zed::Extension for SvelteExtension {
                     "tsserver": {
                         "globalPlugins": [{
                             "name": TS_PLUGIN_PACKAGE_NAME,
-                            "location": zed_ext::sanitize_windows_path(env::current_dir().unwrap())
+                            "location": env::current_dir().unwrap()
                                 .join("node_modules")
                                 .join(&TS_PLUGIN_PACKAGE_NAME)
                                 .to_string_lossy()
@@ -149,25 +150,3 @@ impl zed::Extension for SvelteExtension {
 }
 
 zed::register_extension!(SvelteExtension);
-
-/// Extensions to the Zed extension API that have not yet stabilized.
-mod zed_ext {
-    /// Sanitizes the given path to remove the leading `/` on Windows.
-    ///
-    /// On macOS and Linux this is a no-op.
-    ///
-    /// This is a workaround for https://github.com/bytecodealliance/wasmtime/issues/10415.
-    pub fn sanitize_windows_path(path: std::path::PathBuf) -> std::path::PathBuf {
-        use zed_extension_api::{current_platform, Os};
-
-        let (os, _arch) = current_platform();
-        match os {
-            Os::Mac | Os::Linux => path,
-            Os::Windows => path
-                .to_string_lossy()
-                .to_string()
-                .trim_start_matches('/')
-                .into(),
-        }
-    }
-}
