@@ -13,3 +13,6 @@ language = "Svelte"
 [grammars.svelte]
 repository = "https://github.com/tree-sitter-grammars/tree-sitter-svelte"
 commit = "3f06f705410683adb17d146b5eca28c62fe81ba6"
+
+[context_servers.svelte]
+name = "Svelte MCP"

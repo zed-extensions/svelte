@@ -7,11 +7,12 @@ struct SvelteExtension {
 
 const PACKAGE_NAME: &str = "svelte-language-server";
 const TS_PLUGIN_PACKAGE_NAME: &str = "typescript-svelte-plugin";
+const MCP_SERVER_PACKAGE_NAME: &str = "@sveltejs/mcp";
 
 impl SvelteExtension {
     fn install_package_if_needed(
         &mut self,
-        id: &zed::LanguageServerId,
+        id: Option<&zed::LanguageServerId>,
         package_name: &str,
     ) -> Result<()> {
         let installed_version = zed::npm_package_installed_version(package_name)?;
@@ -21,20 +22,24 @@ impl SvelteExtension {
             return Ok(());
         }
 
-        zed::set_language_server_installation_status(
-            id,
-            &zed::LanguageServerInstallationStatus::CheckingForUpdate,
-        );
+        if let Some(id) = id {
+            zed::set_language_server_installation_status(
+                id,
+                &zed::LanguageServerInstallationStatus::CheckingForUpdate,
+            );
+        }
 
         let latest_version = zed::npm_package_latest_version(package_name)?;
 
         if installed_version.as_ref() != Some(&latest_version) {
             println!("Installing {package_name}@{latest_version}...");
 
-            zed::set_language_server_installation_status(
-                id,
-                &zed::LanguageServerInstallationStatus::Downloading,
-            );
+            if let Some(id) = id {
+                zed::set_language_server_installation_status(
+                    id,
+                    &zed::LanguageServerInstallationStatus::Downloading,
+                );
+            }
 
             if let Err(error) = zed::npm_install_package(package_name, &latest_version) {
                 // If installation failed, but we don't want to error but rather reuse existing version
@@ -63,8 +68,8 @@ impl zed::Extension for SvelteExtension {
         id: &zed::LanguageServerId,
         _: &zed::Worktree,
     ) -> Result<zed::Command> {
-        self.install_package_if_needed(id, PACKAGE_NAME)?;
-        self.install_package_if_needed(id, TS_PLUGIN_PACKAGE_NAME)?;
+        self.install_package_if_needed(Some(id), PACKAGE_NAME)?;
+        self.install_package_if_needed(Some(id), TS_PLUGIN_PACKAGE_NAME)?;
 
         Ok(zed::Command {
             command: zed::node_binary_path()?,
@@ -146,6 +151,26 @@ impl zed::Extension for SvelteExtension {
             }))),
             _ => Ok(None),
         }
+    }
+
+    fn context_server_command(
+        &mut self,
+        _context_server_id: &zed_extension_api::ContextServerId,
+        _project: &zed_extension_api::Project,
+    ) -> Result<zed::Command> {
+        self.install_package_if_needed(None, MCP_SERVER_PACKAGE_NAME)?;
+
+        Ok(zed::Command {
+            command: zed::node_binary_path()?,
+            args: vec![env::current_dir()
+                .unwrap()
+                .join("node_modules")
+                .join(MCP_SERVER_PACKAGE_NAME)
+                .join("dist/index.js")
+                .to_string_lossy()
+                .to_string()],
+            env: Default::default(),
+        })
     }
 }
 
