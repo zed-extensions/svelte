@@ -2,6 +2,7 @@ name = "Svelte"
 grammar = "svelte"
 path_suffixes = ["svelte"]
 block_comment = ["<!-- ", " -->"]
+wrap_characters = { start_prefix = "<", start_suffix = ">", end_prefix = "</", end_suffix = ">" }
 autoclose_before = ":\"'}]>"
 brackets = [
     { start = "{", end = "}", close = true, newline = true },
