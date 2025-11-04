@@ -1,6 +1,11 @@
 ; ; injections.scm
 ; ; --------------
 
+; Add support for comment language injections
+((comment) @content
+    (#set! "language" "comment")
+ )
+
 ; Match script tags with a lang attribute
 (script_element
     (start_tag
