@@ -10,4 +10,6 @@ path = "src/svelte.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+serde = "1.0.228"
+which = "8.0.0"
 zed_extension_api = "0.7.0"
