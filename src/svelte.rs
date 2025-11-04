@@ -1,12 +1,8 @@
-mod runtime;
-
 use std::{collections::HashSet, env};
-use zed_extension_api::{self as zed, Result, serde_json};
-use runtime::Runtime;
+use zed_extension_api::{self as zed, serde_json, Result};
 
 struct SvelteExtension {
     installed: HashSet<String>,
-    runtime: Runtime
 }
 
 const PACKAGE_NAME: &str = "svelte-language-server";
@@ -18,7 +14,7 @@ impl SvelteExtension {
         id: &zed::LanguageServerId,
         package_name: &str,
     ) -> Result<()> {
-        let installed_version = self.runtime.installed_package_version(package_name)?;
+        let installed_version = zed::npm_package_installed_version(package_name)?;
 
         // If package is already installed in this session, then we won't reinstall it
         if installed_version.is_some() && self.installed.contains(package_name) {
@@ -30,7 +26,7 @@ impl SvelteExtension {
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
 
-        let latest_version = self.runtime.latest_package_version(package_name)?;
+        let latest_version = zed::npm_package_latest_version(package_name)?;
 
         if installed_version.as_ref() != Some(&latest_version) {
             println!("Installing {package_name}@{latest_version}...");
@@ -40,7 +36,7 @@ impl SvelteExtension {
                 &zed::LanguageServerInstallationStatus::Downloading,
             );
 
-            if let Err(error) = self.runtime.install_package(package_name, &latest_version){
+            if let Err(error) = zed::npm_install_package(package_name, &latest_version) {
                 // If installation failed, but we don't want to error but rather reuse existing version
                 if installed_version.is_none() {
                     Err(error)?;
@@ -59,7 +55,6 @@ impl zed::Extension for SvelteExtension {
     fn new() -> Self {
         Self {
             installed: HashSet::new(),
-            runtime: Runtime::new()
         }
     }
 
@@ -71,16 +66,20 @@ impl zed::Extension for SvelteExtension {
         self.install_package_if_needed(id, PACKAGE_NAME)?;
         self.install_package_if_needed(id, TS_PLUGIN_PACKAGE_NAME)?;
 
-        let server_path = env::current_dir()
-            .unwrap()
-            .join("node_modules")
-            .join(PACKAGE_NAME)
-            .join("bin/server.js")
-            .to_string_lossy()
-            .to_string();
-
-        self.runtime.server_command(&server_path)
-
+        Ok(zed::Command {
+            command: zed::node_binary_path()?,
+            args: vec![
+                env::current_dir()
+                    .unwrap()
+                    .join("node_modules")
+                    .join(PACKAGE_NAME)
+                    .join("bin/server.js")
+                    .to_string_lossy()
+                    .to_string(),
+                "--stdio".to_string(),
+            ],
+            env: Default::default(),
+        })
     }
 
     fn language_server_initialization_options(
@@ -88,7 +87,6 @@ impl zed::Extension for SvelteExtension {
         _: &zed::LanguageServerId,
         _: &zed::Worktree,
     ) -> Result<Option<serde_json::Value>> {
-
         let config = serde_json::json!({
           "inlayHints": {
             "parameterNames": {
