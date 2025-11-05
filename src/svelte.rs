@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env};
+use std::{collections::HashSet, env, path::PathBuf};
 use zed_extension_api::{self as zed, serde_json, Result};
 
 struct SvelteExtension {
@@ -7,6 +7,14 @@ struct SvelteExtension {
 
 const PACKAGE_NAME: &str = "svelte-language-server";
 const TS_PLUGIN_PACKAGE_NAME: &str = "typescript-svelte-plugin";
+
+fn get_package_path(package_name: &str) -> Result<PathBuf> {
+    let path = env::current_dir()
+        .map_err(|e| e.to_string())?
+        .join("node_modules")
+        .join(package_name);
+    Ok(path)
+}
 
 impl SvelteExtension {
     fn install_package_if_needed(
@@ -66,16 +74,15 @@ impl zed::Extension for SvelteExtension {
         self.install_package_if_needed(id, PACKAGE_NAME)?;
         self.install_package_if_needed(id, TS_PLUGIN_PACKAGE_NAME)?;
 
+        let path = get_package_path(PACKAGE_NAME)?
+            .join("bin/server.js")
+            .to_string_lossy()
+            .to_string();
+
         Ok(zed::Command {
             command: zed::node_binary_path()?,
             args: vec![
-                env::current_dir()
-                    .unwrap()
-                    .join("node_modules")
-                    .join(PACKAGE_NAME)
-                    .join("bin/server.js")
-                    .to_string_lossy()
-                    .to_string(),
+                path,
                 "--stdio".to_string(),
             ],
             env: Default::default(),
@@ -128,17 +135,18 @@ impl zed::Extension for SvelteExtension {
         target_id: &zed::LanguageServerId,
         _: &zed::Worktree,
     ) -> Result<Option<serde_json::Value>> {
+
+        let plugin_location = get_package_path(TS_PLUGIN_PACKAGE_NAME)?
+            .to_string_lossy()
+            .to_string();
+
         match target_id.as_ref() {
             "vtsls" => Ok(Some(serde_json::json!({
                 "vtsls": {
                     "tsserver": {
                         "globalPlugins": [{
                             "name": TS_PLUGIN_PACKAGE_NAME,
-                            "location": env::current_dir().unwrap()
-                                .join("node_modules")
-                                .join(&TS_PLUGIN_PACKAGE_NAME)
-                                .to_string_lossy()
-                                .to_string(),
+                            "location": plugin_location,
                             "enableForWorkspaceTypeScriptVersions": true
                         }]
                     }
