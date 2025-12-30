@@ -81,10 +81,7 @@ impl zed::Extension for SvelteExtension {
 
         Ok(zed::Command {
             command: zed::node_binary_path()?,
-            args: vec![
-                path,
-                "--stdio".to_string(),
-            ],
+            args: vec![path, "--stdio".to_string()],
             env: Default::default(),
         })
     }
@@ -135,7 +132,6 @@ impl zed::Extension for SvelteExtension {
         target_id: &zed::LanguageServerId,
         _: &zed::Worktree,
     ) -> Result<Option<serde_json::Value>> {
-
         let plugin_location = get_package_path(TS_PLUGIN_PACKAGE_NAME)?
             .to_string_lossy()
             .to_string();
