@@ -3,11 +3,10 @@
   (start_tag
     (tag_name) @_tag
     (attribute
-      (attribute_name) @_attr
-      (quoted_attribute_value (attribute_value) @_value)))
+      (quoted_attribute_value
+        (attribute_value) @_value)))
   (raw_text) @injection.content)
   (#match? @_tag "^[Ss][Cc][Rr][Ii][Pp][Tt]$")
-  (#any-of? @_attr "lang" "type")
   (#any-of? @_value "ts" "typescript" "text/typescript")
   (#set! injection.language "typescript"))
 
@@ -18,20 +17,59 @@
   (#eq? @_tag "script")
   (#set! injection.language "javascript"))
 
-; Style content
+; Style with lang="scss"
 ((element
-  (start_tag (tag_name) @_tag)
+  (start_tag
+    (tag_name) @_tag
+    (attribute
+      (quoted_attribute_value
+        (attribute_value) @_scss)))
   (raw_text) @injection.content)
   (#eq? @_tag "style")
+  (#eq? @_scss "scss")
+  (#set! injection.language "scss"))
+
+; Style with lang="sass"
+((element
+  (start_tag
+    (tag_name) @_tag
+    (attribute
+      (quoted_attribute_value
+        (attribute_value) @_sass)))
+  (raw_text) @injection.content)
+  (#eq? @_tag "style")
+  (#eq? @_sass "sass")
+  (#set! injection.language "sass"))
+
+; Style with lang="less"
+((element
+  (start_tag
+    (tag_name) @_tag
+    (attribute
+      (quoted_attribute_value
+        (attribute_value) @_less)))
+  (raw_text) @injection.content)
+  (#eq? @_tag "style")
+  (#eq? @_less "less")
+  (#set! injection.language "less"))
+
+; Style content (CSS default — only when no lang attribute)
+((element
+  (start_tag
+    (tag_name) @_tag
+    (attribute
+      (attribute_name) @_style_attr)*)
+  (raw_text) @injection.content)
+  (#eq? @_tag "style")
+  (#not-any-of? @_style_attr "lang")
   (#set! injection.language "css"))
 
 ; Inline style attribute
 ((attribute
-  (attribute_name) @_name
-  (quoted_attribute_value) @injection.content)
-  (#eq? @_name "style")
-  (#set! injection.language "css")
-  (#set! injection.include-children))
+  (attribute_name) @_style_name
+  (quoted_attribute_value (attribute_value) @injection.content))
+  (#eq? @_style_name "style")
+  (#set! injection.language "css"))
 
 ; Typed expression content
 ((expression content: (js) @injection.content)
@@ -44,43 +82,6 @@
   (#set! injection.language "javascript"))
 ((shorthand_attribute content: (ts) @injection.content)
   (#set! injection.language "typescript"))
-
-; Style preprocessors
-((element
-  (start_tag
-    (tag_name) @_tag
-    (attribute
-      (attribute_name) @_lang
-      (quoted_attribute_value (attribute_value) @_scss)))
-  (raw_text) @injection.content)
-  (#eq? @_tag "style")
-  (#eq? @_lang "lang")
-  (#eq? @_scss "scss")
-  (#set! injection.language "scss"))
-
-((element
-  (start_tag
-    (tag_name) @_tag
-    (attribute
-      (attribute_name) @_lang
-      (quoted_attribute_value (attribute_value) @_sass)))
-  (raw_text) @injection.content)
-  (#eq? @_tag "style")
-  (#eq? @_lang "lang")
-  (#eq? @_sass "sass")
-  (#set! injection.language "sass"))
-
-((element
-  (start_tag
-    (tag_name) @_tag
-    (attribute
-      (attribute_name) @_lang
-      (quoted_attribute_value (attribute_value) @_less)))
-  (raw_text) @injection.content)
-  (#eq? @_tag "style")
-  (#eq? @_lang "lang")
-  (#eq? @_less "less")
-  (#set! injection.language "less"))
 
 ; Tag expressions ({@const}, {@render}, {@html}, {@debug}, {@attach}, {:else if})
 ((expression_value content: (js) @injection.content)
