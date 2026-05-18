@@ -11,5 +11,6 @@ name = "Svelte Language Server"
 language = "Svelte"
 
 [grammars.svelte]
-repository = "https://github.com/tree-sitter-grammars/tree-sitter-svelte"
-commit = "3f06f705410683adb17d146b5eca28c62fe81ba6"
+repository = "https://github.com/themixednuts/tree-sitter-htmlx"
+commit = "9733eb68e29a9ade89eb7fade6866d3a22d50750"
+path = "crates/tree-sitter-svelte"

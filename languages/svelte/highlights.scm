@@ -1,108 +1,135 @@
+; Tag names
+(tag_name) @tag
 
-; comments
+; Erroneous/mismatched end tags
+(erroneous_end_tag_name) @tag
+
+; DOCTYPE declaration
+(doctype) @constant
+
+; Attribute names
+(attribute_name) @attribute
+
+; Attribute values
+(attribute_value) @string
+(quoted_attribute_value) @string
+
+; Comments
 (comment) @comment
 
-; property attribute
-(attribute_directive) @attribute.function
-(attribute_identifier) @attribute
-(attribute_modifier) @attribute.special
+; Character entities
+(entity) @string.special
 
-; Style component attributes as @property
-(start_tag
-    (
-        (tag_name) @_tag_name
-        (#match? @_tag_name "^[A-Z]")
-    )
-    (attribute
-        (attribute_name
-            (attribute_identifier) @tag.property
-        )
-    )
-)
+; Text content
+(text) @text
 
-; Style self-closing component attributes as @tag.property
-(self_closing_tag
-    (
-        (tag_name) @_tag_name
-        (#match? @_tag_name "^[A-Z]")
-    )
-    (attribute
-        (attribute_name
-            (attribute_identifier) @tag.property
-        )
-    )
-)
+; Raw text in script/style
+(raw_text) @text.literal
 
-
-; style elements starting with lowercase letters as tags
-(
-    (tag_name) @tag
-    (#match? @tag "^[a-z]")
-)
-
-; style elements starting with uppercase letters as components (types)
-; Also valid might be to treat them as constructors
-(
-    (tag_name) @tag @tag.component.type.constructor
-    (#match? @tag "^[A-Z]")
-)
-
+; HTML punctuation
 [
   "<"
   ">"
   "</"
   "/>"
-] @tag.punctuation.bracket
+] @punctuation.bracket
 
+"=" @punctuation.delimiter
 
+; Component tags (PascalCase)
+((tag_name) @type (#match? @type "^[A-Z]"))
+
+; Namespaced tags (svelte:component, svelte:self, etc.)
+(tag_name
+  namespace: (tag_namespace) @keyword
+  ":" @punctuation.delimiter
+  name: (tag_local_name) @tag)
+
+; Tag member access (Foo.Bar)
+(tag_name
+  object: (tag_member) @type
+  "." @punctuation.delimiter
+  property: (tag_member) @tag)
+
+; Directives (on:click, bind:value, etc.)
+(attribute_directive) @keyword
+(attribute_name ":" @punctuation.delimiter)
+(attribute_identifier) @property
+(attribute_modifier) @attribute
+(attribute_modifiers "|" @punctuation.delimiter)
+
+; Expressions
+(expression) @embedded
+
+; Shorthand/spread attributes — content only, braces fall through to "{" "}" rule
+(shorthand_attribute content: (_) @variable)
+
+; Curly braces (expression context)
 [
   "{"
   "}"
 ] @punctuation.bracket
 
+"|" @punctuation.delimiter
+
+; Comments inside tag attribute lists
+(tag_comment kind: (line_comment) @comment)
+(tag_comment kind: (block_comment) @comment)
+
+; Block keywords
 [
-    "|"
-] @punctuation.delimiter
+  "if"
+  "each"
+  "await"
+  "key"
+  "snippet"
+  "else"
+  "html"
+  "debug"
+  "const"
+  "render"
+  "attach"
+  "as"
+] @keyword.control
 
+; Block end keywords ({/if}, {/each}, etc.)
+(block_keyword) @keyword.control
 
-[
-  "@"
-  "#"
-  ":"
-  "/"
-] @tag.punctuation.special
+; Block delimiters
+(block_open) @punctuation.bracket
+(block_close) @punctuation.bracket
 
-"=" @operator
+(shorthand_kind) @keyword.control
+(branch_kind) @keyword.control
 
+(expression_value) @embedded
 
-; Treating (if, each, ...) as a keyword inside of blocks
-; like {#if ...} or {#each ...}
-(block_start_tag
-    tag: _ @keyword
-)
+; If block
+(if_block expression: (expression) @embedded)
+(else_if_clause expression: (expression_value) @embedded)
 
-(block_tag
-    tag: _ @keyword
-)
+; Each block
+(each_block expression: (expression) @embedded)
+(each_block binding: (pattern) @variable)
+(each_block index: (pattern) @variable)
+(each_block key: (expression) @embedded)
 
-(block_end_tag
-    tag: _ @keyword
-)
+; Await block
+(await_block expression: (expression) @embedded)
+(await_branch (pattern) @variable)
+(await_block (pattern) @variable)
+(orphan_branch (pattern) @variable)
 
-(expression_tag
-    tag: _ @keyword
-)
+; Key block
+(key_block expression: (expression) @embedded)
 
-; Style quoted string attribute values
-(quoted_attribute_value) @string
+; Snippet block
+(snippet_block name: (snippet_name) @function)
+(snippet_parameters parameter: (pattern) @variable)
+(snippet_type_parameters) @type
 
+; Malformed blocks (e.g. { #if ...} with space before sigil)
+(block_sigil) @keyword.control
 
-; Highlight the `as` keyword in each blocks
-(each_start
-    ("as") @tag.keyword
-)
-
-
-; Highlight the snippet name as a function
-; (e.g. {#snippet foo(bar)}
-(snippet_name) @function
+; Snippet/render punctuation
+["(" ")" ","] @punctuation.delimiter
