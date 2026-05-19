@@ -6,6 +6,7 @@ struct SvelteExtension {
 }
 
 const PACKAGE_NAME: &str = "svelte-language-server";
+const TYPESCRIPT_PACKAGE_NAME: &str = "typescript";
 const TS_PLUGIN_PACKAGE_NAME: &str = "typescript-svelte-plugin";
 
 fn get_package_path(package_name: &str) -> Result<PathBuf> {
@@ -73,6 +74,9 @@ impl zed::Extension for SvelteExtension {
     ) -> Result<zed::Command> {
         self.install_package_if_needed(id, PACKAGE_NAME)?;
         self.install_package_if_needed(id, TS_PLUGIN_PACKAGE_NAME)?;
+
+        // Peer dependencies of svelte-language-server. Ensure TypeScript is installed and updated as well
+        self.install_package_if_needed(id, TYPESCRIPT_PACKAGE_NAME)?;
 
         let path = get_package_path(PACKAGE_NAME)?
             .join("bin/server.js")
