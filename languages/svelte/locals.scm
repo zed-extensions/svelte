@@ -41,9 +41,15 @@
   parameter: (pattern
     content: (_) @local.definition))
 
-(const_tag
+((const_tag
   expression: (expression_value
     content: (_) @local.definition))
+  (#match? @local.definition "\\S"))
+
+((declaration_tag
+  declaration: (expression_value
+    content: (_) @local.definition))
+  (#match? @local.definition "\\S"))
 
 ((attribute
   name: (attribute_name

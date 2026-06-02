@@ -94,6 +94,7 @@
 
 ; Block end keywords ({/if}, {/each}, etc.)
 (block_keyword) @keyword.control
+(declaration_kind) @keyword.control
 
 ; Block delimiters
 (block_open) @punctuation.bracket

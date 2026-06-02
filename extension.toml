@@ -12,5 +12,5 @@ language = "Svelte"
 
 [grammars.svelte]
 repository = "https://github.com/themixednuts/tree-sitter-htmlx"
-commit = "80c3e698ec7379772c7f2aecb9b4b4c4ac52ff0b"
+commit = "c9b9cc35709fff494a3a9e41cd9471b633649e45"
 path = "crates/tree-sitter-svelte"
