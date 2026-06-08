@@ -1,35 +1,8 @@
-
-(script_element
-    (start_tag) @name
-    (raw_text) @context @item
-)
-
-(script_element
-    (end_tag) @name @item
-)
-
-(style_element
-    (start_tag) @name
-    (raw_text) @context
-) @item
-
-
 (document) @item
 
 (comment) @annotation
 
-(if_statement
-    (if_start) @name
-) @item
-
-(else_block
-    (else_start) @name
-) @item
-
-(else_if_block
-    (else_if_start) @name
-) @item
-
+; Elements
 (element
     (start_tag) @name
 ) @item
@@ -38,32 +11,46 @@
     (self_closing_tag) @name
 ) @item
 
-
-; (if_end) @name @item
-
-(each_statement
-    (each_start) @name
+; Script elements
+(element
+    (start_tag
+        (tag_name) @_tag
+        (#match? @_tag "^[Ss][Cc][Rr][Ii][Pp][Tt]$"))
+    (raw_text) @context
 ) @item
 
-
-(snippet_statement
-    (snippet_start) @name
+; Style elements
+(element
+    (start_tag
+        (tag_name) @_tag
+        (#match? @_tag "^[Ss][Tt][Yy][Ll][Ee]$"))
+    (raw_text) @context
 ) @item
 
-(snippet_end) @name @item
+(if_block) @item
+
+(else_clause) @item
+
+(else_if_clause) @item
+
+(each_block) @item
+
+(await_block) @item
+
+(await_branch) @item
+
+(key_block) @item
+
+(snippet_block
+    name: (snippet_name) @name
+) @item
 
 (html_tag) @name @item
 
 (const_tag) @name @item
 
-(await_statement
-    (await_start) @name
-) @item
+(debug_tag) @name @item
 
-(then_block
-    (then_start) @name
-) @item
+(render_tag) @name @item
 
-(catch_block
-    (catch_start) @name
-) @item
+(attach_tag) @name @item
