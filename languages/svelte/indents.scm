@@ -6,6 +6,7 @@
   (snippet_statement)
   (script_element)
   (style_element)
+  (key_statement)
   (start_tag ">" @end)
   (self_closing_tag "/>" @end)
   (element

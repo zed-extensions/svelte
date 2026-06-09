@@ -86,4 +86,8 @@
     (#set! language "css")
 )
 
-; Downstream TODO: Style @component comments as markdown
+; Match @component documentation comments as markdown
+((comment) @content
+    (#match? @content "@component")
+    (#set! language "markdown")
+)

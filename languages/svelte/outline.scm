@@ -31,13 +31,18 @@
 ) @item
 
 (element
-    (start_tag) @name
+    (start_tag
+        (tag_name) @name
+        (#match? @name "^[A-Z]")
+    )
 ) @item
 
 (element
-    (self_closing_tag) @name
+    (self_closing_tag
+        (tag_name) @name
+        (#match? @name "^[A-Z]")
+    )
 ) @item
-
 
 ; (if_end) @name @item
 
@@ -66,4 +71,11 @@
 
 (catch_block
     (catch_start) @name
+) @item
+
+(element
+    (start_tag
+        (tag_name) @name
+        (#match? @name "^svelte:")
+    )
 ) @item

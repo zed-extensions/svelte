@@ -3,7 +3,11 @@
 (comment) @comment
 
 ; property attribute
-(attribute_directive) @attribute.function
+; Highlight functional Svelte directives as keywords to separate them from HTML attributes
+(
+    (attribute_directive) @keyword
+    (#match? @keyword "^(bind|on|class|use|transition|animate|style|let)")
+)
 (attribute_identifier) @attribute
 (attribute_modifier) @attribute.special
 
@@ -40,6 +44,12 @@
     (#match? @tag "^[a-z]")
 )
 
+; Highlight native <svelte:*> tags as built-in elements
+(
+    (tag_name) @keyword
+    (#match? @keyword "^svelte:")
+)
+
 ; style elements starting with uppercase letters as components (types)
 ; Also valid might be to treat them as constructors
 (
@@ -74,7 +84,6 @@
 
 "=" @operator
 
-
 ; Treating (if, each, ...) as a keyword inside of blocks
 ; like {#if ...} or {#each ...}
 (block_start_tag
@@ -93,15 +102,14 @@
     tag: _ @keyword
 )
 
+
 ; Style quoted string attribute values
 (quoted_attribute_value) @string
-
 
 ; Highlight the `as` keyword in each blocks
 (each_start
     ("as") @tag.keyword
 )
-
 
 ; Highlight the snippet name as a function
 ; (e.g. {#snippet foo(bar)}
