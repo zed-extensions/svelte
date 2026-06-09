@@ -1,4 +1,4 @@
-use std::{collections::HashSet, env, path::PathBuf};
+use std::{collections::HashSet, env, fs, path::PathBuf};
 use zed_extension_api::{self as zed, serde_json, Result};
 
 struct SvelteExtension {
@@ -44,14 +44,33 @@ impl SvelteExtension {
                 &zed::LanguageServerInstallationStatus::Downloading,
             );
 
-            if let Err(error) = zed::npm_install_package(package_name, &latest_version) {
-                // If installation failed, but we don't want to error but rather reuse existing version
-                if installed_version.is_none() {
-                    Err(error)?;
+            match zed::npm_install_package(package_name, &latest_version) {
+                Ok(_) => {
+                    println!("{package_name} installed with success!")
+                }
+                Err(error) => {
+                    eprintln!("Warning: failed to installed the most recent {package_name} package: {error}");
+
+                    if installed_version.is_none() {
+                        return Err(format!(
+                            "Error: failed to install {package_name}@{latest_version}: {}",
+                            error
+                        ));
+                    } else {
+                        eprintln!("Utilizing already installed fallback package")
+                    }
                 }
             }
         } else {
             println!("Found {package_name}@{latest_version} installed");
+        }
+
+        let package_path = get_package_path(package_name)?;
+        if fs::metadata(&package_path).is_err() {
+            return Err(format!(
+                "Integrity fail: {package_name}@{latest_version} not found at {}",
+                package_path.display()
+            ));
         }
 
         self.installed.insert(package_name.into());
